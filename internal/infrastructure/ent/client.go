@@ -12,10 +12,12 @@ import (
 	"client_service/internal/infrastructure/ent/migrate"
 
 	"client_service/internal/infrastructure/ent/clientschema"
+	"client_service/internal/infrastructure/ent/memberschema"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -25,6 +27,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// ClientSchema is the client for interacting with the ClientSchema builders.
 	ClientSchema *ClientSchemaClient
+	// MemberSchema is the client for interacting with the MemberSchema builders.
+	MemberSchema *MemberSchemaClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -37,6 +41,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.ClientSchema = NewClientSchemaClient(c.config)
+	c.MemberSchema = NewMemberSchemaClient(c.config)
 }
 
 type (
@@ -130,6 +135,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:          ctx,
 		config:       cfg,
 		ClientSchema: NewClientSchemaClient(cfg),
+		MemberSchema: NewMemberSchemaClient(cfg),
 	}, nil
 }
 
@@ -150,6 +156,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:          ctx,
 		config:       cfg,
 		ClientSchema: NewClientSchemaClient(cfg),
+		MemberSchema: NewMemberSchemaClient(cfg),
 	}, nil
 }
 
@@ -179,12 +186,14 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.ClientSchema.Use(hooks...)
+	c.MemberSchema.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.ClientSchema.Intercept(interceptors...)
+	c.MemberSchema.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -192,6 +201,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *ClientSchemaMutation:
 		return c.ClientSchema.mutate(ctx, m)
+	case *MemberSchemaMutation:
+		return c.MemberSchema.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -305,6 +316,22 @@ func (c *ClientSchemaClient) GetX(ctx context.Context, id int) *ClientSchema {
 	return obj
 }
 
+// QueryMembers queries the members edge of a ClientSchema.
+func (c *ClientSchemaClient) QueryMembers(_m *ClientSchema) *MemberSchemaQuery {
+	query := (&MemberSchemaClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(clientschema.Table, clientschema.FieldID, id),
+			sqlgraph.To(memberschema.Table, memberschema.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, clientschema.MembersTable, clientschema.MembersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ClientSchemaClient) Hooks() []Hook {
 	return c.hooks.ClientSchema
@@ -330,12 +357,161 @@ func (c *ClientSchemaClient) mutate(ctx context.Context, m *ClientSchemaMutation
 	}
 }
 
+// MemberSchemaClient is a client for the MemberSchema schema.
+type MemberSchemaClient struct {
+	config
+}
+
+// NewMemberSchemaClient returns a client for the MemberSchema from the given config.
+func NewMemberSchemaClient(c config) *MemberSchemaClient {
+	return &MemberSchemaClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `memberschema.Hooks(f(g(h())))`.
+func (c *MemberSchemaClient) Use(hooks ...Hook) {
+	c.hooks.MemberSchema = append(c.hooks.MemberSchema, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `memberschema.Intercept(f(g(h())))`.
+func (c *MemberSchemaClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MemberSchema = append(c.inters.MemberSchema, interceptors...)
+}
+
+// Create returns a builder for creating a MemberSchema entity.
+func (c *MemberSchemaClient) Create() *MemberSchemaCreate {
+	mutation := newMemberSchemaMutation(c.config, OpCreate)
+	return &MemberSchemaCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MemberSchema entities.
+func (c *MemberSchemaClient) CreateBulk(builders ...*MemberSchemaCreate) *MemberSchemaCreateBulk {
+	return &MemberSchemaCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MemberSchemaClient) MapCreateBulk(slice any, setFunc func(*MemberSchemaCreate, int)) *MemberSchemaCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MemberSchemaCreateBulk{err: fmt.Errorf("calling to MemberSchemaClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MemberSchemaCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MemberSchemaCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MemberSchema.
+func (c *MemberSchemaClient) Update() *MemberSchemaUpdate {
+	mutation := newMemberSchemaMutation(c.config, OpUpdate)
+	return &MemberSchemaUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MemberSchemaClient) UpdateOne(_m *MemberSchema) *MemberSchemaUpdateOne {
+	mutation := newMemberSchemaMutation(c.config, OpUpdateOne, withMemberSchema(_m))
+	return &MemberSchemaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MemberSchemaClient) UpdateOneID(id int) *MemberSchemaUpdateOne {
+	mutation := newMemberSchemaMutation(c.config, OpUpdateOne, withMemberSchemaID(id))
+	return &MemberSchemaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MemberSchema.
+func (c *MemberSchemaClient) Delete() *MemberSchemaDelete {
+	mutation := newMemberSchemaMutation(c.config, OpDelete)
+	return &MemberSchemaDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MemberSchemaClient) DeleteOne(_m *MemberSchema) *MemberSchemaDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MemberSchemaClient) DeleteOneID(id int) *MemberSchemaDeleteOne {
+	builder := c.Delete().Where(memberschema.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MemberSchemaDeleteOne{builder}
+}
+
+// Query returns a query builder for MemberSchema.
+func (c *MemberSchemaClient) Query() *MemberSchemaQuery {
+	return &MemberSchemaQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMemberSchema},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MemberSchema entity by its id.
+func (c *MemberSchemaClient) Get(ctx context.Context, id int) (*MemberSchema, error) {
+	return c.Query().Where(memberschema.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MemberSchemaClient) GetX(ctx context.Context, id int) *MemberSchema {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryClients queries the clients edge of a MemberSchema.
+func (c *MemberSchemaClient) QueryClients(_m *MemberSchema) *ClientSchemaQuery {
+	query := (&ClientSchemaClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(memberschema.Table, memberschema.FieldID, id),
+			sqlgraph.To(clientschema.Table, clientschema.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, memberschema.ClientsTable, memberschema.ClientsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MemberSchemaClient) Hooks() []Hook {
+	return c.hooks.MemberSchema
+}
+
+// Interceptors returns the client interceptors.
+func (c *MemberSchemaClient) Interceptors() []Interceptor {
+	return c.inters.MemberSchema
+}
+
+func (c *MemberSchemaClient) mutate(ctx context.Context, m *MemberSchemaMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MemberSchemaCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MemberSchemaUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MemberSchemaUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MemberSchemaDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MemberSchema mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ClientSchema []ent.Hook
+		ClientSchema, MemberSchema []ent.Hook
 	}
 	inters struct {
-		ClientSchema []ent.Interceptor
+		ClientSchema, MemberSchema []ent.Interceptor
 	}
 )

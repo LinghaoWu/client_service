@@ -36,8 +36,29 @@ type ClientSchema struct {
 	// CreatedAt holds the value of the "CreatedAt" field.
 	CreatedAt time.Time `json:"CreatedAt,omitempty"`
 	// UpdatedAt holds the value of the "UpdatedAt" field.
-	UpdatedAt    time.Time `json:"UpdatedAt,omitempty"`
+	UpdatedAt time.Time `json:"UpdatedAt,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ClientSchemaQuery when eager-loading is set.
+	Edges        ClientSchemaEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// ClientSchemaEdges holds the relations/edges for other nodes in the graph.
+type ClientSchemaEdges struct {
+	// Members holds the value of the members edge.
+	Members []*MemberSchema `json:"members,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// MembersOrErr returns the Members value or an error if the edge
+// was not loaded in eager-loading.
+func (e ClientSchemaEdges) MembersOrErr() ([]*MemberSchema, error) {
+	if e.loadedTypes[0] {
+		return e.Members, nil
+	}
+	return nil, &NotLoadedError{edge: "members"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -145,6 +166,11 @@ func (_m *ClientSchema) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *ClientSchema) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryMembers queries the "members" edge of the ClientSchema entity.
+func (_m *ClientSchema) QueryMembers() *MemberSchemaQuery {
+	return NewClientSchemaClient(_m.config).QueryMembers(_m)
 }
 
 // Update returns a builder for updating this ClientSchema.

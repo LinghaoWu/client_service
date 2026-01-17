@@ -20,6 +20,18 @@ func (f ClientSchemaFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ClientSchemaMutation", m)
 }
 
+// The MemberSchemaFunc type is an adapter to allow the use of ordinary
+// function as MemberSchema mutator.
+type MemberSchemaFunc func(context.Context, *ent.MemberSchemaMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MemberSchemaFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MemberSchemaMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MemberSchemaMutation", m)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, ent.Mutation) bool
 

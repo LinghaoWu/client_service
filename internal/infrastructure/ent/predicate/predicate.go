@@ -8,3 +8,6 @@ import (
 
 // ClientSchema is the predicate function for clientschema builders.
 type ClientSchema func(*sql.Selector)
+
+// MemberSchema is the predicate function for memberschema builders.
+type MemberSchema func(*sql.Selector)

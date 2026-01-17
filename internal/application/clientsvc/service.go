@@ -32,15 +32,15 @@ func GetServiceImpl(cd service.ClientDomain) *ServiceImpl {
 }
 
 func (s *ServiceImpl) CreateClientSvc(c context.Context, e *entity.ClientDO) error {
+	if _, err := s.client_domain.GetClientByUSCC(c, e.USCC); err == nil {
+		return errors.New("client with the given USCC already exists")
+	}
+
 	clientID, err := snowflake.GenerateClientID()
 	if err != nil {
 		return errors.New("failed to generate client ID: " + err.Error())
 	}
 	e.ClientID = clientID
-
-	if _, err := s.client_domain.GetClientByUSCC(c, e.USCC); err == nil {
-		return errors.New("client with the given USCC already exists")
-	}
 
 	if err := s.client_domain.CreateClient(c, e); err != nil {
 		return err

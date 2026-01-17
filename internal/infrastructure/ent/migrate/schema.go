@@ -28,11 +28,55 @@ var (
 		Columns:    ClientSchemasColumns,
 		PrimaryKey: []*schema.Column{ClientSchemasColumns[0]},
 	}
+	// MemberSchemasColumns holds the columns for the "member_schemas" table.
+	MemberSchemasColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "member_id", Type: field.TypeInt64, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "phone", Type: field.TypeString, Nullable: true},
+		{Name: "email", Type: field.TypeString, Nullable: true},
+		{Name: "role", Type: field.TypeString, Nullable: true},
+	}
+	// MemberSchemasTable holds the schema information for the "member_schemas" table.
+	MemberSchemasTable = &schema.Table{
+		Name:       "member_schemas",
+		Columns:    MemberSchemasColumns,
+		PrimaryKey: []*schema.Column{MemberSchemasColumns[0]},
+	}
+	// ClientSchemaMembersColumns holds the columns for the "client_schema_members" table.
+	ClientSchemaMembersColumns = []*schema.Column{
+		{Name: "client_schema_id", Type: field.TypeInt},
+		{Name: "member_schema_id", Type: field.TypeInt},
+	}
+	// ClientSchemaMembersTable holds the schema information for the "client_schema_members" table.
+	ClientSchemaMembersTable = &schema.Table{
+		Name:       "client_schema_members",
+		Columns:    ClientSchemaMembersColumns,
+		PrimaryKey: []*schema.Column{ClientSchemaMembersColumns[0], ClientSchemaMembersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "client_schema_members_client_schema_id",
+				Columns:    []*schema.Column{ClientSchemaMembersColumns[0]},
+				RefColumns: []*schema.Column{ClientSchemasColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "client_schema_members_member_schema_id",
+				Columns:    []*schema.Column{ClientSchemaMembersColumns[1]},
+				RefColumns: []*schema.Column{MemberSchemasColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ClientSchemasTable,
+		MemberSchemasTable,
+		ClientSchemaMembersTable,
 	}
 )
 
 func init() {
+	ClientSchemaMembersTable.ForeignKeys[0].RefTable = ClientSchemasTable
+	ClientSchemaMembersTable.ForeignKeys[1].RefTable = MemberSchemasTable
 }

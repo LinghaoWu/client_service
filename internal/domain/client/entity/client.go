@@ -14,8 +14,8 @@ type ClientDO struct {
 	UpdatedAt time.Time
 }
 
-func (c *ClientDO) IsValidClient() bool {
-	if len(c.USCC) == 0 || len(c.USCC) > 18 {
+func (do *ClientDO) IsValidClient() bool {
+	if len(do.USCC) == 0 || len(do.USCC) > 18 {
 		return false
 	}
 	return true

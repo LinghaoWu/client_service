@@ -38,6 +38,7 @@ func (r *ClientRepoImpl) CreateClient(c context.Context, e *entity.ClientDO) err
 
 func (r *ClientRepoImpl) GetClientByUSCC(c context.Context, uscc string) (*entity.ClientDO, error) {
 	client, err := r.db.ClientSchema.Query().
+		Where(clientschema.IsActive(true)).
 		Where(clientschema.USCC(uscc)).
 		Only(c)
 
@@ -60,6 +61,7 @@ func (r *ClientRepoImpl) GetClientByUSCC(c context.Context, uscc string) (*entit
 
 func (r *ClientRepoImpl) GetClientByName(c context.Context, name string) (*entity.ClientDO, error) {
 	client, err := r.db.ClientSchema.Query().
+		Where(clientschema.IsActive(true)).
 		Where(clientschema.Name(name)).
 		Only(c)
 

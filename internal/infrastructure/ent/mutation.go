@@ -4,6 +4,7 @@ package ent
 
 import (
 	"client_service/internal/infrastructure/ent/clientschema"
+	"client_service/internal/infrastructure/ent/memberschema"
 	"client_service/internal/infrastructure/ent/predicate"
 	"context"
 	"errors"
@@ -25,29 +26,33 @@ const (
 
 	// Node types.
 	TypeClientSchema = "ClientSchema"
+	TypeMemberSchema = "MemberSchema"
 )
 
 // ClientSchemaMutation represents an operation that mutates the ClientSchema nodes in the graph.
 type ClientSchemaMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	_ClientID     *int64
-	add_ClientID  *int64
-	_Name         *string
-	_USCC         *string
-	_Contact      *string
-	_Phone        *string
-	_Email        *string
-	_Address      *string
-	_IsActive     *bool
-	_CreatedAt    *time.Time
-	_UpdatedAt    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*ClientSchema, error)
-	predicates    []predicate.ClientSchema
+	op             Op
+	typ            string
+	id             *int
+	_ClientID      *int64
+	add_ClientID   *int64
+	_Name          *string
+	_USCC          *string
+	_Contact       *string
+	_Phone         *string
+	_Email         *string
+	_Address       *string
+	_IsActive      *bool
+	_CreatedAt     *time.Time
+	_UpdatedAt     *time.Time
+	clearedFields  map[string]struct{}
+	members        map[int]struct{}
+	removedmembers map[int]struct{}
+	clearedmembers bool
+	done           bool
+	oldValue       func(context.Context) (*ClientSchema, error)
+	predicates     []predicate.ClientSchema
 }
 
 var _ ent.Mutation = (*ClientSchemaMutation)(nil)
@@ -528,6 +533,60 @@ func (m *ClientSchemaMutation) ResetUpdatedAt() {
 	m._UpdatedAt = nil
 }
 
+// AddMemberIDs adds the "members" edge to the MemberSchema entity by ids.
+func (m *ClientSchemaMutation) AddMemberIDs(ids ...int) {
+	if m.members == nil {
+		m.members = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.members[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMembers clears the "members" edge to the MemberSchema entity.
+func (m *ClientSchemaMutation) ClearMembers() {
+	m.clearedmembers = true
+}
+
+// MembersCleared reports if the "members" edge to the MemberSchema entity was cleared.
+func (m *ClientSchemaMutation) MembersCleared() bool {
+	return m.clearedmembers
+}
+
+// RemoveMemberIDs removes the "members" edge to the MemberSchema entity by IDs.
+func (m *ClientSchemaMutation) RemoveMemberIDs(ids ...int) {
+	if m.removedmembers == nil {
+		m.removedmembers = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.members, ids[i])
+		m.removedmembers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMembers returns the removed IDs of the "members" edge to the MemberSchema entity.
+func (m *ClientSchemaMutation) RemovedMembersIDs() (ids []int) {
+	for id := range m.removedmembers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MembersIDs returns the "members" edge IDs in the mutation.
+func (m *ClientSchemaMutation) MembersIDs() (ids []int) {
+	for id := range m.members {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMembers resets all changes to the "members" edge.
+func (m *ClientSchemaMutation) ResetMembers() {
+	m.members = nil
+	m.clearedmembers = false
+	m.removedmembers = nil
+}
+
 // Where appends a list predicates to the ClientSchemaMutation builder.
 func (m *ClientSchemaMutation) Where(ps ...predicate.ClientSchema) {
 	m.predicates = append(m.predicates, ps...)
@@ -829,48 +888,815 @@ func (m *ClientSchemaMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ClientSchemaMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.members != nil {
+		edges = append(edges, clientschema.EdgeMembers)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ClientSchemaMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case clientschema.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.members))
+		for id := range m.members {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ClientSchemaMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedmembers != nil {
+		edges = append(edges, clientschema.EdgeMembers)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ClientSchemaMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case clientschema.EdgeMembers:
+		ids := make([]ent.Value, 0, len(m.removedmembers))
+		for id := range m.removedmembers {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ClientSchemaMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedmembers {
+		edges = append(edges, clientschema.EdgeMembers)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ClientSchemaMutation) EdgeCleared(name string) bool {
+	switch name {
+	case clientschema.EdgeMembers:
+		return m.clearedmembers
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ClientSchemaMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown ClientSchema unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ClientSchemaMutation) ResetEdge(name string) error {
+	switch name {
+	case clientschema.EdgeMembers:
+		m.ResetMembers()
+		return nil
+	}
 	return fmt.Errorf("unknown ClientSchema edge %s", name)
+}
+
+// MemberSchemaMutation represents an operation that mutates the MemberSchema nodes in the graph.
+type MemberSchemaMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int
+	_MemberID      *int64
+	add_MemberID   *int64
+	_Name          *string
+	_Phone         *string
+	_Email         *string
+	_Role          *string
+	clearedFields  map[string]struct{}
+	clients        map[int]struct{}
+	removedclients map[int]struct{}
+	clearedclients bool
+	done           bool
+	oldValue       func(context.Context) (*MemberSchema, error)
+	predicates     []predicate.MemberSchema
+}
+
+var _ ent.Mutation = (*MemberSchemaMutation)(nil)
+
+// memberschemaOption allows management of the mutation configuration using functional options.
+type memberschemaOption func(*MemberSchemaMutation)
+
+// newMemberSchemaMutation creates new mutation for the MemberSchema entity.
+func newMemberSchemaMutation(c config, op Op, opts ...memberschemaOption) *MemberSchemaMutation {
+	m := &MemberSchemaMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMemberSchema,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMemberSchemaID sets the ID field of the mutation.
+func withMemberSchemaID(id int) memberschemaOption {
+	return func(m *MemberSchemaMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MemberSchema
+		)
+		m.oldValue = func(ctx context.Context) (*MemberSchema, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MemberSchema.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMemberSchema sets the old MemberSchema of the mutation.
+func withMemberSchema(node *MemberSchema) memberschemaOption {
+	return func(m *MemberSchemaMutation) {
+		m.oldValue = func(context.Context) (*MemberSchema, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MemberSchemaMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MemberSchemaMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MemberSchemaMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MemberSchemaMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MemberSchema.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetMemberID sets the "MemberID" field.
+func (m *MemberSchemaMutation) SetMemberID(i int64) {
+	m._MemberID = &i
+	m.add_MemberID = nil
+}
+
+// MemberID returns the value of the "MemberID" field in the mutation.
+func (m *MemberSchemaMutation) MemberID() (r int64, exists bool) {
+	v := m._MemberID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMemberID returns the old "MemberID" field's value of the MemberSchema entity.
+// If the MemberSchema object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberSchemaMutation) OldMemberID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMemberID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMemberID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMemberID: %w", err)
+	}
+	return oldValue.MemberID, nil
+}
+
+// AddMemberID adds i to the "MemberID" field.
+func (m *MemberSchemaMutation) AddMemberID(i int64) {
+	if m.add_MemberID != nil {
+		*m.add_MemberID += i
+	} else {
+		m.add_MemberID = &i
+	}
+}
+
+// AddedMemberID returns the value that was added to the "MemberID" field in this mutation.
+func (m *MemberSchemaMutation) AddedMemberID() (r int64, exists bool) {
+	v := m.add_MemberID
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMemberID resets all changes to the "MemberID" field.
+func (m *MemberSchemaMutation) ResetMemberID() {
+	m._MemberID = nil
+	m.add_MemberID = nil
+}
+
+// SetName sets the "Name" field.
+func (m *MemberSchemaMutation) SetName(s string) {
+	m._Name = &s
+}
+
+// Name returns the value of the "Name" field in the mutation.
+func (m *MemberSchemaMutation) Name() (r string, exists bool) {
+	v := m._Name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "Name" field's value of the MemberSchema entity.
+// If the MemberSchema object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberSchemaMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "Name" field.
+func (m *MemberSchemaMutation) ResetName() {
+	m._Name = nil
+}
+
+// SetPhone sets the "Phone" field.
+func (m *MemberSchemaMutation) SetPhone(s string) {
+	m._Phone = &s
+}
+
+// Phone returns the value of the "Phone" field in the mutation.
+func (m *MemberSchemaMutation) Phone() (r string, exists bool) {
+	v := m._Phone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPhone returns the old "Phone" field's value of the MemberSchema entity.
+// If the MemberSchema object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberSchemaMutation) OldPhone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPhone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPhone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPhone: %w", err)
+	}
+	return oldValue.Phone, nil
+}
+
+// ClearPhone clears the value of the "Phone" field.
+func (m *MemberSchemaMutation) ClearPhone() {
+	m._Phone = nil
+	m.clearedFields[memberschema.FieldPhone] = struct{}{}
+}
+
+// PhoneCleared returns if the "Phone" field was cleared in this mutation.
+func (m *MemberSchemaMutation) PhoneCleared() bool {
+	_, ok := m.clearedFields[memberschema.FieldPhone]
+	return ok
+}
+
+// ResetPhone resets all changes to the "Phone" field.
+func (m *MemberSchemaMutation) ResetPhone() {
+	m._Phone = nil
+	delete(m.clearedFields, memberschema.FieldPhone)
+}
+
+// SetEmail sets the "Email" field.
+func (m *MemberSchemaMutation) SetEmail(s string) {
+	m._Email = &s
+}
+
+// Email returns the value of the "Email" field in the mutation.
+func (m *MemberSchemaMutation) Email() (r string, exists bool) {
+	v := m._Email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "Email" field's value of the MemberSchema entity.
+// If the MemberSchema object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberSchemaMutation) OldEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ClearEmail clears the value of the "Email" field.
+func (m *MemberSchemaMutation) ClearEmail() {
+	m._Email = nil
+	m.clearedFields[memberschema.FieldEmail] = struct{}{}
+}
+
+// EmailCleared returns if the "Email" field was cleared in this mutation.
+func (m *MemberSchemaMutation) EmailCleared() bool {
+	_, ok := m.clearedFields[memberschema.FieldEmail]
+	return ok
+}
+
+// ResetEmail resets all changes to the "Email" field.
+func (m *MemberSchemaMutation) ResetEmail() {
+	m._Email = nil
+	delete(m.clearedFields, memberschema.FieldEmail)
+}
+
+// SetRole sets the "Role" field.
+func (m *MemberSchemaMutation) SetRole(s string) {
+	m._Role = &s
+}
+
+// Role returns the value of the "Role" field in the mutation.
+func (m *MemberSchemaMutation) Role() (r string, exists bool) {
+	v := m._Role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRole returns the old "Role" field's value of the MemberSchema entity.
+// If the MemberSchema object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MemberSchemaMutation) OldRole(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRole is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRole requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRole: %w", err)
+	}
+	return oldValue.Role, nil
+}
+
+// ClearRole clears the value of the "Role" field.
+func (m *MemberSchemaMutation) ClearRole() {
+	m._Role = nil
+	m.clearedFields[memberschema.FieldRole] = struct{}{}
+}
+
+// RoleCleared returns if the "Role" field was cleared in this mutation.
+func (m *MemberSchemaMutation) RoleCleared() bool {
+	_, ok := m.clearedFields[memberschema.FieldRole]
+	return ok
+}
+
+// ResetRole resets all changes to the "Role" field.
+func (m *MemberSchemaMutation) ResetRole() {
+	m._Role = nil
+	delete(m.clearedFields, memberschema.FieldRole)
+}
+
+// AddClientIDs adds the "clients" edge to the ClientSchema entity by ids.
+func (m *MemberSchemaMutation) AddClientIDs(ids ...int) {
+	if m.clients == nil {
+		m.clients = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.clients[ids[i]] = struct{}{}
+	}
+}
+
+// ClearClients clears the "clients" edge to the ClientSchema entity.
+func (m *MemberSchemaMutation) ClearClients() {
+	m.clearedclients = true
+}
+
+// ClientsCleared reports if the "clients" edge to the ClientSchema entity was cleared.
+func (m *MemberSchemaMutation) ClientsCleared() bool {
+	return m.clearedclients
+}
+
+// RemoveClientIDs removes the "clients" edge to the ClientSchema entity by IDs.
+func (m *MemberSchemaMutation) RemoveClientIDs(ids ...int) {
+	if m.removedclients == nil {
+		m.removedclients = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.clients, ids[i])
+		m.removedclients[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedClients returns the removed IDs of the "clients" edge to the ClientSchema entity.
+func (m *MemberSchemaMutation) RemovedClientsIDs() (ids []int) {
+	for id := range m.removedclients {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ClientsIDs returns the "clients" edge IDs in the mutation.
+func (m *MemberSchemaMutation) ClientsIDs() (ids []int) {
+	for id := range m.clients {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetClients resets all changes to the "clients" edge.
+func (m *MemberSchemaMutation) ResetClients() {
+	m.clients = nil
+	m.clearedclients = false
+	m.removedclients = nil
+}
+
+// Where appends a list predicates to the MemberSchemaMutation builder.
+func (m *MemberSchemaMutation) Where(ps ...predicate.MemberSchema) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MemberSchemaMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MemberSchemaMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MemberSchema, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MemberSchemaMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MemberSchemaMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MemberSchema).
+func (m *MemberSchemaMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MemberSchemaMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m._MemberID != nil {
+		fields = append(fields, memberschema.FieldMemberID)
+	}
+	if m._Name != nil {
+		fields = append(fields, memberschema.FieldName)
+	}
+	if m._Phone != nil {
+		fields = append(fields, memberschema.FieldPhone)
+	}
+	if m._Email != nil {
+		fields = append(fields, memberschema.FieldEmail)
+	}
+	if m._Role != nil {
+		fields = append(fields, memberschema.FieldRole)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MemberSchemaMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case memberschema.FieldMemberID:
+		return m.MemberID()
+	case memberschema.FieldName:
+		return m.Name()
+	case memberschema.FieldPhone:
+		return m.Phone()
+	case memberschema.FieldEmail:
+		return m.Email()
+	case memberschema.FieldRole:
+		return m.Role()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MemberSchemaMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case memberschema.FieldMemberID:
+		return m.OldMemberID(ctx)
+	case memberschema.FieldName:
+		return m.OldName(ctx)
+	case memberschema.FieldPhone:
+		return m.OldPhone(ctx)
+	case memberschema.FieldEmail:
+		return m.OldEmail(ctx)
+	case memberschema.FieldRole:
+		return m.OldRole(ctx)
+	}
+	return nil, fmt.Errorf("unknown MemberSchema field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MemberSchemaMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case memberschema.FieldMemberID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMemberID(v)
+		return nil
+	case memberschema.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case memberschema.FieldPhone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPhone(v)
+		return nil
+	case memberschema.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
+		return nil
+	case memberschema.FieldRole:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRole(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MemberSchema field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MemberSchemaMutation) AddedFields() []string {
+	var fields []string
+	if m.add_MemberID != nil {
+		fields = append(fields, memberschema.FieldMemberID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MemberSchemaMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case memberschema.FieldMemberID:
+		return m.AddedMemberID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MemberSchemaMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case memberschema.FieldMemberID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMemberID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MemberSchema numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MemberSchemaMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(memberschema.FieldPhone) {
+		fields = append(fields, memberschema.FieldPhone)
+	}
+	if m.FieldCleared(memberschema.FieldEmail) {
+		fields = append(fields, memberschema.FieldEmail)
+	}
+	if m.FieldCleared(memberschema.FieldRole) {
+		fields = append(fields, memberschema.FieldRole)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MemberSchemaMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MemberSchemaMutation) ClearField(name string) error {
+	switch name {
+	case memberschema.FieldPhone:
+		m.ClearPhone()
+		return nil
+	case memberschema.FieldEmail:
+		m.ClearEmail()
+		return nil
+	case memberschema.FieldRole:
+		m.ClearRole()
+		return nil
+	}
+	return fmt.Errorf("unknown MemberSchema nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MemberSchemaMutation) ResetField(name string) error {
+	switch name {
+	case memberschema.FieldMemberID:
+		m.ResetMemberID()
+		return nil
+	case memberschema.FieldName:
+		m.ResetName()
+		return nil
+	case memberschema.FieldPhone:
+		m.ResetPhone()
+		return nil
+	case memberschema.FieldEmail:
+		m.ResetEmail()
+		return nil
+	case memberschema.FieldRole:
+		m.ResetRole()
+		return nil
+	}
+	return fmt.Errorf("unknown MemberSchema field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MemberSchemaMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clients != nil {
+		edges = append(edges, memberschema.EdgeClients)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MemberSchemaMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case memberschema.EdgeClients:
+		ids := make([]ent.Value, 0, len(m.clients))
+		for id := range m.clients {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MemberSchemaMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedclients != nil {
+		edges = append(edges, memberschema.EdgeClients)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MemberSchemaMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case memberschema.EdgeClients:
+		ids := make([]ent.Value, 0, len(m.removedclients))
+		for id := range m.removedclients {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MemberSchemaMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedclients {
+		edges = append(edges, memberschema.EdgeClients)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MemberSchemaMutation) EdgeCleared(name string) bool {
+	switch name {
+	case memberschema.EdgeClients:
+		return m.clearedclients
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MemberSchemaMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MemberSchema unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MemberSchemaMutation) ResetEdge(name string) error {
+	switch name {
+	case memberschema.EdgeClients:
+		m.ResetClients()
+		return nil
+	}
+	return fmt.Errorf("unknown MemberSchema edge %s", name)
 }

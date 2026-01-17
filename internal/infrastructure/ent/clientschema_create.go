@@ -4,6 +4,7 @@ package ent
 
 import (
 	"client_service/internal/infrastructure/ent/clientschema"
+	"client_service/internal/infrastructure/ent/memberschema"
 	"context"
 	"errors"
 	"fmt"
@@ -102,6 +103,21 @@ func (_c *ClientSchemaCreate) SetNillableUpdatedAt(v *time.Time) *ClientSchemaCr
 		_c.SetUpdatedAt(*v)
 	}
 	return _c
+}
+
+// AddMemberIDs adds the "members" edge to the MemberSchema entity by IDs.
+func (_c *ClientSchemaCreate) AddMemberIDs(ids ...int) *ClientSchemaCreate {
+	_c.mutation.AddMemberIDs(ids...)
+	return _c
+}
+
+// AddMembers adds the "members" edges to the MemberSchema entity.
+func (_c *ClientSchemaCreate) AddMembers(v ...*MemberSchema) *ClientSchemaCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMemberIDs(ids...)
 }
 
 // Mutation returns the ClientSchemaMutation object of the builder.
@@ -280,6 +296,22 @@ func (_c *ClientSchemaCreate) createSpec() (*ClientSchema, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(clientschema.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"client_service/internal/infrastructure/ent/clientschema"
+	"client_service/internal/infrastructure/ent/memberschema"
 	"client_service/internal/infrastructure/ent/predicate"
 	"context"
 	"errors"
@@ -25,27 +26,6 @@ type ClientSchemaUpdate struct {
 // Where appends a list predicates to the ClientSchemaUpdate builder.
 func (_u *ClientSchemaUpdate) Where(ps ...predicate.ClientSchema) *ClientSchemaUpdate {
 	_u.mutation.Where(ps...)
-	return _u
-}
-
-// SetClientID sets the "ClientID" field.
-func (_u *ClientSchemaUpdate) SetClientID(v int64) *ClientSchemaUpdate {
-	_u.mutation.ResetClientID()
-	_u.mutation.SetClientID(v)
-	return _u
-}
-
-// SetNillableClientID sets the "ClientID" field if the given value is not nil.
-func (_u *ClientSchemaUpdate) SetNillableClientID(v *int64) *ClientSchemaUpdate {
-	if v != nil {
-		_u.SetClientID(*v)
-	}
-	return _u
-}
-
-// AddClientID adds value to the "ClientID" field.
-func (_u *ClientSchemaUpdate) AddClientID(v int64) *ClientSchemaUpdate {
-	_u.mutation.AddClientID(v)
 	return _u
 }
 
@@ -147,29 +127,51 @@ func (_u *ClientSchemaUpdate) SetNillableIsActive(v *bool) *ClientSchemaUpdate {
 	return _u
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
-func (_u *ClientSchemaUpdate) SetCreatedAt(v time.Time) *ClientSchemaUpdate {
-	_u.mutation.SetCreatedAt(v)
-	return _u
-}
-
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
-func (_u *ClientSchemaUpdate) SetNillableCreatedAt(v *time.Time) *ClientSchemaUpdate {
-	if v != nil {
-		_u.SetCreatedAt(*v)
-	}
-	return _u
-}
-
 // SetUpdatedAt sets the "UpdatedAt" field.
 func (_u *ClientSchemaUpdate) SetUpdatedAt(v time.Time) *ClientSchemaUpdate {
 	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
+// AddMemberIDs adds the "members" edge to the MemberSchema entity by IDs.
+func (_u *ClientSchemaUpdate) AddMemberIDs(ids ...int) *ClientSchemaUpdate {
+	_u.mutation.AddMemberIDs(ids...)
+	return _u
+}
+
+// AddMembers adds the "members" edges to the MemberSchema entity.
+func (_u *ClientSchemaUpdate) AddMembers(v ...*MemberSchema) *ClientSchemaUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMemberIDs(ids...)
+}
+
 // Mutation returns the ClientSchemaMutation object of the builder.
 func (_u *ClientSchemaUpdate) Mutation() *ClientSchemaMutation {
 	return _u.mutation
+}
+
+// ClearMembers clears all "members" edges to the MemberSchema entity.
+func (_u *ClientSchemaUpdate) ClearMembers() *ClientSchemaUpdate {
+	_u.mutation.ClearMembers()
+	return _u
+}
+
+// RemoveMemberIDs removes the "members" edge to MemberSchema entities by IDs.
+func (_u *ClientSchemaUpdate) RemoveMemberIDs(ids ...int) *ClientSchemaUpdate {
+	_u.mutation.RemoveMemberIDs(ids...)
+	return _u
+}
+
+// RemoveMembers removes "members" edges to MemberSchema entities.
+func (_u *ClientSchemaUpdate) RemoveMembers(v ...*MemberSchema) *ClientSchemaUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMemberIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -255,12 +257,6 @@ func (_u *ClientSchemaUpdate) sqlSave(ctx context.Context) (_node int, err error
 			}
 		}
 	}
-	if value, ok := _u.mutation.ClientID(); ok {
-		_spec.SetField(clientschema.FieldClientID, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedClientID(); ok {
-		_spec.AddField(clientschema.FieldClientID, field.TypeInt64, value)
-	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(clientschema.FieldName, field.TypeString, value)
 	}
@@ -282,11 +278,53 @@ func (_u *ClientSchemaUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.IsActive(); ok {
 		_spec.SetField(clientschema.FieldIsActive, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
-		_spec.SetField(clientschema.FieldCreatedAt, field.TypeTime, value)
-	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(clientschema.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMembersIDs(); len(nodes) > 0 && !_u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -306,27 +344,6 @@ type ClientSchemaUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *ClientSchemaMutation
-}
-
-// SetClientID sets the "ClientID" field.
-func (_u *ClientSchemaUpdateOne) SetClientID(v int64) *ClientSchemaUpdateOne {
-	_u.mutation.ResetClientID()
-	_u.mutation.SetClientID(v)
-	return _u
-}
-
-// SetNillableClientID sets the "ClientID" field if the given value is not nil.
-func (_u *ClientSchemaUpdateOne) SetNillableClientID(v *int64) *ClientSchemaUpdateOne {
-	if v != nil {
-		_u.SetClientID(*v)
-	}
-	return _u
-}
-
-// AddClientID adds value to the "ClientID" field.
-func (_u *ClientSchemaUpdateOne) AddClientID(v int64) *ClientSchemaUpdateOne {
-	_u.mutation.AddClientID(v)
-	return _u
 }
 
 // SetName sets the "Name" field.
@@ -427,29 +444,51 @@ func (_u *ClientSchemaUpdateOne) SetNillableIsActive(v *bool) *ClientSchemaUpdat
 	return _u
 }
 
-// SetCreatedAt sets the "CreatedAt" field.
-func (_u *ClientSchemaUpdateOne) SetCreatedAt(v time.Time) *ClientSchemaUpdateOne {
-	_u.mutation.SetCreatedAt(v)
-	return _u
-}
-
-// SetNillableCreatedAt sets the "CreatedAt" field if the given value is not nil.
-func (_u *ClientSchemaUpdateOne) SetNillableCreatedAt(v *time.Time) *ClientSchemaUpdateOne {
-	if v != nil {
-		_u.SetCreatedAt(*v)
-	}
-	return _u
-}
-
 // SetUpdatedAt sets the "UpdatedAt" field.
 func (_u *ClientSchemaUpdateOne) SetUpdatedAt(v time.Time) *ClientSchemaUpdateOne {
 	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
+// AddMemberIDs adds the "members" edge to the MemberSchema entity by IDs.
+func (_u *ClientSchemaUpdateOne) AddMemberIDs(ids ...int) *ClientSchemaUpdateOne {
+	_u.mutation.AddMemberIDs(ids...)
+	return _u
+}
+
+// AddMembers adds the "members" edges to the MemberSchema entity.
+func (_u *ClientSchemaUpdateOne) AddMembers(v ...*MemberSchema) *ClientSchemaUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddMemberIDs(ids...)
+}
+
 // Mutation returns the ClientSchemaMutation object of the builder.
 func (_u *ClientSchemaUpdateOne) Mutation() *ClientSchemaMutation {
 	return _u.mutation
+}
+
+// ClearMembers clears all "members" edges to the MemberSchema entity.
+func (_u *ClientSchemaUpdateOne) ClearMembers() *ClientSchemaUpdateOne {
+	_u.mutation.ClearMembers()
+	return _u
+}
+
+// RemoveMemberIDs removes the "members" edge to MemberSchema entities by IDs.
+func (_u *ClientSchemaUpdateOne) RemoveMemberIDs(ids ...int) *ClientSchemaUpdateOne {
+	_u.mutation.RemoveMemberIDs(ids...)
+	return _u
+}
+
+// RemoveMembers removes "members" edges to MemberSchema entities.
+func (_u *ClientSchemaUpdateOne) RemoveMembers(v ...*MemberSchema) *ClientSchemaUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveMemberIDs(ids...)
 }
 
 // Where appends a list predicates to the ClientSchemaUpdate builder.
@@ -565,12 +604,6 @@ func (_u *ClientSchemaUpdateOne) sqlSave(ctx context.Context) (_node *ClientSche
 			}
 		}
 	}
-	if value, ok := _u.mutation.ClientID(); ok {
-		_spec.SetField(clientschema.FieldClientID, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedClientID(); ok {
-		_spec.AddField(clientschema.FieldClientID, field.TypeInt64, value)
-	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(clientschema.FieldName, field.TypeString, value)
 	}
@@ -592,11 +625,53 @@ func (_u *ClientSchemaUpdateOne) sqlSave(ctx context.Context) (_node *ClientSche
 	if value, ok := _u.mutation.IsActive(); ok {
 		_spec.SetField(clientschema.FieldIsActive, field.TypeBool, value)
 	}
-	if value, ok := _u.mutation.CreatedAt(); ok {
-		_spec.SetField(clientschema.FieldCreatedAt, field.TypeTime, value)
-	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(clientschema.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedMembersIDs(); len(nodes) > 0 && !_u.mutation.MembersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.MembersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   clientschema.MembersTable,
+			Columns: clientschema.MembersPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &ClientSchema{config: _u.config}
 	_spec.Assign = _node.assignValues

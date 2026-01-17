@@ -4,6 +4,7 @@ package ent
 
 import (
 	"client_service/internal/infrastructure/ent/clientschema"
+	"client_service/internal/infrastructure/ent/memberschema"
 	"context"
 	"errors"
 	"fmt"
@@ -74,6 +75,7 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			clientschema.Table: clientschema.ValidColumn,
+			memberschema.Table: memberschema.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

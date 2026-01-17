@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// ClientSchema is the client for interacting with the ClientSchema builders.
 	ClientSchema *ClientSchemaClient
+	// MemberSchema is the client for interacting with the MemberSchema builders.
+	MemberSchema *MemberSchemaClient
 
 	// lazily loaded.
 	client     *Client
@@ -146,6 +148,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.ClientSchema = NewClientSchemaClient(tx.config)
+	tx.MemberSchema = NewMemberSchemaClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

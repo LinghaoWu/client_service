@@ -17,53 +17,53 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-// ClientSchemaQuery is the builder for querying ClientSchema entities.
-type ClientSchemaQuery struct {
+// MemberSchemaQuery is the builder for querying MemberSchema entities.
+type MemberSchemaQuery struct {
 	config
 	ctx         *QueryContext
-	order       []clientschema.OrderOption
+	order       []memberschema.OrderOption
 	inters      []Interceptor
-	predicates  []predicate.ClientSchema
-	withMembers *MemberSchemaQuery
+	predicates  []predicate.MemberSchema
+	withClients *ClientSchemaQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the ClientSchemaQuery builder.
-func (_q *ClientSchemaQuery) Where(ps ...predicate.ClientSchema) *ClientSchemaQuery {
+// Where adds a new predicate for the MemberSchemaQuery builder.
+func (_q *MemberSchemaQuery) Where(ps ...predicate.MemberSchema) *MemberSchemaQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *ClientSchemaQuery) Limit(limit int) *ClientSchemaQuery {
+func (_q *MemberSchemaQuery) Limit(limit int) *MemberSchemaQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *ClientSchemaQuery) Offset(offset int) *ClientSchemaQuery {
+func (_q *MemberSchemaQuery) Offset(offset int) *MemberSchemaQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *ClientSchemaQuery) Unique(unique bool) *ClientSchemaQuery {
+func (_q *MemberSchemaQuery) Unique(unique bool) *MemberSchemaQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *ClientSchemaQuery) Order(o ...clientschema.OrderOption) *ClientSchemaQuery {
+func (_q *MemberSchemaQuery) Order(o ...memberschema.OrderOption) *MemberSchemaQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryMembers chains the current query on the "members" edge.
-func (_q *ClientSchemaQuery) QueryMembers() *MemberSchemaQuery {
-	query := (&MemberSchemaClient{config: _q.config}).Query()
+// QueryClients chains the current query on the "clients" edge.
+func (_q *MemberSchemaQuery) QueryClients() *ClientSchemaQuery {
+	query := (&ClientSchemaClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -73,9 +73,9 @@ func (_q *ClientSchemaQuery) QueryMembers() *MemberSchemaQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(clientschema.Table, clientschema.FieldID, selector),
-			sqlgraph.To(memberschema.Table, memberschema.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, clientschema.MembersTable, clientschema.MembersPrimaryKey...),
+			sqlgraph.From(memberschema.Table, memberschema.FieldID, selector),
+			sqlgraph.To(clientschema.Table, clientschema.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, memberschema.ClientsTable, memberschema.ClientsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -83,21 +83,21 @@ func (_q *ClientSchemaQuery) QueryMembers() *MemberSchemaQuery {
 	return query
 }
 
-// First returns the first ClientSchema entity from the query.
-// Returns a *NotFoundError when no ClientSchema was found.
-func (_q *ClientSchemaQuery) First(ctx context.Context) (*ClientSchema, error) {
+// First returns the first MemberSchema entity from the query.
+// Returns a *NotFoundError when no MemberSchema was found.
+func (_q *MemberSchemaQuery) First(ctx context.Context) (*MemberSchema, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{clientschema.Label}
+		return nil, &NotFoundError{memberschema.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *ClientSchemaQuery) FirstX(ctx context.Context) *ClientSchema {
+func (_q *MemberSchemaQuery) FirstX(ctx context.Context) *MemberSchema {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -105,22 +105,22 @@ func (_q *ClientSchemaQuery) FirstX(ctx context.Context) *ClientSchema {
 	return node
 }
 
-// FirstID returns the first ClientSchema ID from the query.
-// Returns a *NotFoundError when no ClientSchema ID was found.
-func (_q *ClientSchemaQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first MemberSchema ID from the query.
+// Returns a *NotFoundError when no MemberSchema ID was found.
+func (_q *MemberSchemaQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{clientschema.Label}
+		err = &NotFoundError{memberschema.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *ClientSchemaQuery) FirstIDX(ctx context.Context) int {
+func (_q *MemberSchemaQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -128,10 +128,10 @@ func (_q *ClientSchemaQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single ClientSchema entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one ClientSchema entity is found.
-// Returns a *NotFoundError when no ClientSchema entities are found.
-func (_q *ClientSchemaQuery) Only(ctx context.Context) (*ClientSchema, error) {
+// Only returns a single MemberSchema entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one MemberSchema entity is found.
+// Returns a *NotFoundError when no MemberSchema entities are found.
+func (_q *MemberSchemaQuery) Only(ctx context.Context) (*MemberSchema, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -140,14 +140,14 @@ func (_q *ClientSchemaQuery) Only(ctx context.Context) (*ClientSchema, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{clientschema.Label}
+		return nil, &NotFoundError{memberschema.Label}
 	default:
-		return nil, &NotSingularError{clientschema.Label}
+		return nil, &NotSingularError{memberschema.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *ClientSchemaQuery) OnlyX(ctx context.Context) *ClientSchema {
+func (_q *MemberSchemaQuery) OnlyX(ctx context.Context) *MemberSchema {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -155,10 +155,10 @@ func (_q *ClientSchemaQuery) OnlyX(ctx context.Context) *ClientSchema {
 	return node
 }
 
-// OnlyID is like Only, but returns the only ClientSchema ID in the query.
-// Returns a *NotSingularError when more than one ClientSchema ID is found.
+// OnlyID is like Only, but returns the only MemberSchema ID in the query.
+// Returns a *NotSingularError when more than one MemberSchema ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *ClientSchemaQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *MemberSchemaQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -167,15 +167,15 @@ func (_q *ClientSchemaQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{clientschema.Label}
+		err = &NotFoundError{memberschema.Label}
 	default:
-		err = &NotSingularError{clientschema.Label}
+		err = &NotSingularError{memberschema.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *ClientSchemaQuery) OnlyIDX(ctx context.Context) int {
+func (_q *MemberSchemaQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -183,18 +183,18 @@ func (_q *ClientSchemaQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of ClientSchemas.
-func (_q *ClientSchemaQuery) All(ctx context.Context) ([]*ClientSchema, error) {
+// All executes the query and returns a list of MemberSchemas.
+func (_q *MemberSchemaQuery) All(ctx context.Context) ([]*MemberSchema, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*ClientSchema, *ClientSchemaQuery]()
-	return withInterceptors[[]*ClientSchema](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*MemberSchema, *MemberSchemaQuery]()
+	return withInterceptors[[]*MemberSchema](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *ClientSchemaQuery) AllX(ctx context.Context) []*ClientSchema {
+func (_q *MemberSchemaQuery) AllX(ctx context.Context) []*MemberSchema {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -202,20 +202,20 @@ func (_q *ClientSchemaQuery) AllX(ctx context.Context) []*ClientSchema {
 	return nodes
 }
 
-// IDs executes the query and returns a list of ClientSchema IDs.
-func (_q *ClientSchemaQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of MemberSchema IDs.
+func (_q *MemberSchemaQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(clientschema.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(memberschema.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *ClientSchemaQuery) IDsX(ctx context.Context) []int {
+func (_q *MemberSchemaQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -224,16 +224,16 @@ func (_q *ClientSchemaQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *ClientSchemaQuery) Count(ctx context.Context) (int, error) {
+func (_q *MemberSchemaQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*ClientSchemaQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*MemberSchemaQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *ClientSchemaQuery) CountX(ctx context.Context) int {
+func (_q *MemberSchemaQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -242,7 +242,7 @@ func (_q *ClientSchemaQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *ClientSchemaQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *MemberSchemaQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -255,7 +255,7 @@ func (_q *ClientSchemaQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *ClientSchemaQuery) ExistX(ctx context.Context) bool {
+func (_q *MemberSchemaQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -263,33 +263,33 @@ func (_q *ClientSchemaQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the ClientSchemaQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the MemberSchemaQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *ClientSchemaQuery) Clone() *ClientSchemaQuery {
+func (_q *MemberSchemaQuery) Clone() *MemberSchemaQuery {
 	if _q == nil {
 		return nil
 	}
-	return &ClientSchemaQuery{
+	return &MemberSchemaQuery{
 		config:      _q.config,
 		ctx:         _q.ctx.Clone(),
-		order:       append([]clientschema.OrderOption{}, _q.order...),
+		order:       append([]memberschema.OrderOption{}, _q.order...),
 		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.ClientSchema{}, _q.predicates...),
-		withMembers: _q.withMembers.Clone(),
+		predicates:  append([]predicate.MemberSchema{}, _q.predicates...),
+		withClients: _q.withClients.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithMembers tells the query-builder to eager-load the nodes that are connected to
-// the "members" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ClientSchemaQuery) WithMembers(opts ...func(*MemberSchemaQuery)) *ClientSchemaQuery {
-	query := (&MemberSchemaClient{config: _q.config}).Query()
+// WithClients tells the query-builder to eager-load the nodes that are connected to
+// the "clients" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MemberSchemaQuery) WithClients(opts ...func(*ClientSchemaQuery)) *MemberSchemaQuery {
+	query := (&ClientSchemaClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withMembers = query
+	_q.withClients = query
 	return _q
 }
 
@@ -299,19 +299,19 @@ func (_q *ClientSchemaQuery) WithMembers(opts ...func(*MemberSchemaQuery)) *Clie
 // Example:
 //
 //	var v []struct {
-//		ClientID int64 `json:"ClientID,omitempty"`
+//		MemberID int64 `json:"MemberID,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.ClientSchema.Query().
-//		GroupBy(clientschema.FieldClientID).
+//	client.MemberSchema.Query().
+//		GroupBy(memberschema.FieldMemberID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *ClientSchemaQuery) GroupBy(field string, fields ...string) *ClientSchemaGroupBy {
+func (_q *MemberSchemaQuery) GroupBy(field string, fields ...string) *MemberSchemaGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &ClientSchemaGroupBy{build: _q}
+	grbuild := &MemberSchemaGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = clientschema.Label
+	grbuild.label = memberschema.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -322,26 +322,26 @@ func (_q *ClientSchemaQuery) GroupBy(field string, fields ...string) *ClientSche
 // Example:
 //
 //	var v []struct {
-//		ClientID int64 `json:"ClientID,omitempty"`
+//		MemberID int64 `json:"MemberID,omitempty"`
 //	}
 //
-//	client.ClientSchema.Query().
-//		Select(clientschema.FieldClientID).
+//	client.MemberSchema.Query().
+//		Select(memberschema.FieldMemberID).
 //		Scan(ctx, &v)
-func (_q *ClientSchemaQuery) Select(fields ...string) *ClientSchemaSelect {
+func (_q *MemberSchemaQuery) Select(fields ...string) *MemberSchemaSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &ClientSchemaSelect{ClientSchemaQuery: _q}
-	sbuild.label = clientschema.Label
+	sbuild := &MemberSchemaSelect{MemberSchemaQuery: _q}
+	sbuild.label = memberschema.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a ClientSchemaSelect configured with the given aggregations.
-func (_q *ClientSchemaQuery) Aggregate(fns ...AggregateFunc) *ClientSchemaSelect {
+// Aggregate returns a MemberSchemaSelect configured with the given aggregations.
+func (_q *MemberSchemaQuery) Aggregate(fns ...AggregateFunc) *MemberSchemaSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *ClientSchemaQuery) prepareQuery(ctx context.Context) error {
+func (_q *MemberSchemaQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -353,7 +353,7 @@ func (_q *ClientSchemaQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !clientschema.ValidColumn(f) {
+		if !memberschema.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -367,19 +367,19 @@ func (_q *ClientSchemaQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *ClientSchemaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ClientSchema, error) {
+func (_q *MemberSchemaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*MemberSchema, error) {
 	var (
-		nodes       = []*ClientSchema{}
+		nodes       = []*MemberSchema{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			_q.withMembers != nil,
+			_q.withClients != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*ClientSchema).scanValues(nil, columns)
+		return (*MemberSchema).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &ClientSchema{config: _q.config}
+		node := &MemberSchema{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -393,20 +393,20 @@ func (_q *ClientSchemaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withMembers; query != nil {
-		if err := _q.loadMembers(ctx, query, nodes,
-			func(n *ClientSchema) { n.Edges.Members = []*MemberSchema{} },
-			func(n *ClientSchema, e *MemberSchema) { n.Edges.Members = append(n.Edges.Members, e) }); err != nil {
+	if query := _q.withClients; query != nil {
+		if err := _q.loadClients(ctx, query, nodes,
+			func(n *MemberSchema) { n.Edges.Clients = []*ClientSchema{} },
+			func(n *MemberSchema, e *ClientSchema) { n.Edges.Clients = append(n.Edges.Clients, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *ClientSchemaQuery) loadMembers(ctx context.Context, query *MemberSchemaQuery, nodes []*ClientSchema, init func(*ClientSchema), assign func(*ClientSchema, *MemberSchema)) error {
+func (_q *MemberSchemaQuery) loadClients(ctx context.Context, query *ClientSchemaQuery, nodes []*MemberSchema, init func(*MemberSchema), assign func(*MemberSchema, *ClientSchema)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[int]*ClientSchema)
-	nids := make(map[int]map[*ClientSchema]struct{})
+	byID := make(map[int]*MemberSchema)
+	nids := make(map[int]map[*MemberSchema]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -415,11 +415,11 @@ func (_q *ClientSchemaQuery) loadMembers(ctx context.Context, query *MemberSchem
 		}
 	}
 	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(clientschema.MembersTable)
-		s.Join(joinT).On(s.C(memberschema.FieldID), joinT.C(clientschema.MembersPrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(clientschema.MembersPrimaryKey[0]), edgeIDs...))
+		joinT := sql.Table(memberschema.ClientsTable)
+		s.Join(joinT).On(s.C(clientschema.FieldID), joinT.C(memberschema.ClientsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(memberschema.ClientsPrimaryKey[1]), edgeIDs...))
 		columns := s.SelectedColumns()
-		s.Select(joinT.C(clientschema.MembersPrimaryKey[0]))
+		s.Select(joinT.C(memberschema.ClientsPrimaryKey[1]))
 		s.AppendSelect(columns...)
 		s.SetDistinct(false)
 	})
@@ -441,7 +441,7 @@ func (_q *ClientSchemaQuery) loadMembers(ctx context.Context, query *MemberSchem
 				outValue := int(values[0].(*sql.NullInt64).Int64)
 				inValue := int(values[1].(*sql.NullInt64).Int64)
 				if nids[inValue] == nil {
-					nids[inValue] = map[*ClientSchema]struct{}{byID[outValue]: {}}
+					nids[inValue] = map[*MemberSchema]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
 				}
 				nids[inValue][byID[outValue]] = struct{}{}
@@ -449,14 +449,14 @@ func (_q *ClientSchemaQuery) loadMembers(ctx context.Context, query *MemberSchem
 			}
 		})
 	})
-	neighbors, err := withInterceptors[[]*MemberSchema](ctx, query, qr, query.inters)
+	neighbors, err := withInterceptors[[]*ClientSchema](ctx, query, qr, query.inters)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
 		nodes, ok := nids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected "members" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected "clients" node returned %v`, n.ID)
 		}
 		for kn := range nodes {
 			assign(kn, n)
@@ -465,7 +465,7 @@ func (_q *ClientSchemaQuery) loadMembers(ctx context.Context, query *MemberSchem
 	return nil
 }
 
-func (_q *ClientSchemaQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *MemberSchemaQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -474,8 +474,8 @@ func (_q *ClientSchemaQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *ClientSchemaQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(clientschema.Table, clientschema.Columns, sqlgraph.NewFieldSpec(clientschema.FieldID, field.TypeInt))
+func (_q *MemberSchemaQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(memberschema.Table, memberschema.Columns, sqlgraph.NewFieldSpec(memberschema.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -484,9 +484,9 @@ func (_q *ClientSchemaQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, clientschema.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, memberschema.FieldID)
 		for i := range fields {
-			if fields[i] != clientschema.FieldID {
+			if fields[i] != memberschema.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -514,12 +514,12 @@ func (_q *ClientSchemaQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *ClientSchemaQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *MemberSchemaQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(clientschema.Table)
+	t1 := builder.Table(memberschema.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = clientschema.Columns
+		columns = memberschema.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -546,28 +546,28 @@ func (_q *ClientSchemaQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// ClientSchemaGroupBy is the group-by builder for ClientSchema entities.
-type ClientSchemaGroupBy struct {
+// MemberSchemaGroupBy is the group-by builder for MemberSchema entities.
+type MemberSchemaGroupBy struct {
 	selector
-	build *ClientSchemaQuery
+	build *MemberSchemaQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *ClientSchemaGroupBy) Aggregate(fns ...AggregateFunc) *ClientSchemaGroupBy {
+func (_g *MemberSchemaGroupBy) Aggregate(fns ...AggregateFunc) *MemberSchemaGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *ClientSchemaGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *MemberSchemaGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ClientSchemaQuery, *ClientSchemaGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*MemberSchemaQuery, *MemberSchemaGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *ClientSchemaGroupBy) sqlScan(ctx context.Context, root *ClientSchemaQuery, v any) error {
+func (_g *MemberSchemaGroupBy) sqlScan(ctx context.Context, root *MemberSchemaQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -594,28 +594,28 @@ func (_g *ClientSchemaGroupBy) sqlScan(ctx context.Context, root *ClientSchemaQu
 	return sql.ScanSlice(rows, v)
 }
 
-// ClientSchemaSelect is the builder for selecting fields of ClientSchema entities.
-type ClientSchemaSelect struct {
-	*ClientSchemaQuery
+// MemberSchemaSelect is the builder for selecting fields of MemberSchema entities.
+type MemberSchemaSelect struct {
+	*MemberSchemaQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *ClientSchemaSelect) Aggregate(fns ...AggregateFunc) *ClientSchemaSelect {
+func (_s *MemberSchemaSelect) Aggregate(fns ...AggregateFunc) *MemberSchemaSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *ClientSchemaSelect) Scan(ctx context.Context, v any) error {
+func (_s *MemberSchemaSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*ClientSchemaQuery, *ClientSchemaSelect](ctx, _s.ClientSchemaQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*MemberSchemaQuery, *MemberSchemaSelect](ctx, _s.MemberSchemaQuery, _s, _s.inters, v)
 }
 
-func (_s *ClientSchemaSelect) sqlScan(ctx context.Context, root *ClientSchemaQuery, v any) error {
+func (_s *MemberSchemaSelect) sqlScan(ctx context.Context, root *MemberSchemaQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

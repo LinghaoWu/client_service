@@ -4,6 +4,7 @@ package ent
 
 import (
 	"client_service/internal/infrastructure/ent/clientschema"
+	"client_service/internal/infrastructure/ent/memberschema"
 	"client_service/internal/infrastructure/ent/schema"
 	"time"
 )
@@ -52,4 +53,10 @@ func init() {
 	clientschema.DefaultUpdatedAt = clientschemaDescUpdatedAt.Default.(func() time.Time)
 	// clientschema.UpdateDefaultUpdatedAt holds the default value on update for the UpdatedAt field.
 	clientschema.UpdateDefaultUpdatedAt = clientschemaDescUpdatedAt.UpdateDefault.(func() time.Time)
+	memberschemaFields := schema.MemberSchema{}.Fields()
+	_ = memberschemaFields
+	// memberschemaDescName is the schema descriptor for Name field.
+	memberschemaDescName := memberschemaFields[1].Descriptor()
+	// memberschema.NameValidator is a validator for the "Name" field. It is called by the builders before save.
+	memberschema.NameValidator = memberschemaDescName.Validators[0].(func(string) error)
 }

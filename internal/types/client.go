@@ -3,12 +3,13 @@ package types
 import "client_service/internal/domain/client/entity"
 
 type ClientReq struct {
-	Name    string `json:"name" binding:"required"`
-	USCC    string `json:"uscc" binding:"required"`
-	Contact string `json:"contact"`
-	Phone   string `json:"phone"`
-	Email   string `json:"email"`
-	Address string `json:"address"`
+	ClientID int64  `json:"client_id"`
+	Name     string `json:"name" binding:"required"`
+	USCC     string `json:"uscc" binding:"required"`
+	Contact  string `json:"contact"`
+	Phone    string `json:"phone"`
+	Email    string `json:"email"`
+	Address  string `json:"address"`
 }
 
 type ClientResp struct {
@@ -23,12 +24,13 @@ type ClientResp struct {
 
 func ClientReqToClientDO(req *ClientReq) *entity.ClientDO {
 	return &entity.ClientDO{
-		Name:    req.Name,
-		USCC:    req.USCC,
-		Contact: req.Contact,
-		Phone:   req.Phone,
-		Email:   req.Email,
-		Address: req.Address,
+		ClientID: req.ClientID,
+		Name:     req.Name,
+		USCC:     req.USCC,
+		Contact:  req.Contact,
+		Phone:    req.Phone,
+		Email:    req.Email,
+		Address:  req.Address,
 	}
 }
 
